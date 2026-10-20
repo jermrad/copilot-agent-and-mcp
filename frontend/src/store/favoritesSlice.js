@@ -19,9 +19,24 @@ export const addFavorite = createAsyncThunk('favorites/addFavorite', async ({ to
   return bookId;
 });
 
+export const clearAllFavorites = createAsyncThunk('favorites/clearAllFavorites', async (token) => {
+  try {
+    const res = await fetch('http://localhost:4000/api/favorites', {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to clear favorites (HTTP ${res.status})`);
+    }
+  } catch (error) {
+    console.error('Failed to clear favorites:', error);
+    throw error;
+  }
+});
+
 const favoritesSlice = createSlice({
   name: 'favorites',
-  initialState: { items: [], status: 'idle' },
+  initialState: { items: [], status: 'idle', clearStatus: 'idle', clearError: null },
   reducers: {},
   extraReducers: builder => {
     builder
@@ -31,6 +46,18 @@ const favoritesSlice = createSlice({
         state.items = action.payload;
       })
       .addCase(fetchFavorites.rejected, state => { state.status = 'failed'; })
+      .addCase(clearAllFavorites.pending, state => {
+        state.clearStatus = 'loading';
+        state.clearError = null;
+      })
+      .addCase(clearAllFavorites.fulfilled, state => {
+        state.clearStatus = 'succeeded';
+        state.items = [];
+      })
+      .addCase(clearAllFavorites.rejected, state => {
+        state.clearStatus = 'failed';
+        state.clearError = 'Failed to clear favorites. Please try again.';
+      })
       .addCase(addFavorite.fulfilled, (state, action) => {
         // After adding, fetch the updated favorites list to ensure UI is in sync
       });

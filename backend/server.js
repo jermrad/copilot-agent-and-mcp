@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
+const writeJSON = require('./writeJSON');
 
 const app = express();
 const PORT = 4000;
@@ -24,9 +25,6 @@ const usersFile = isTest
 // Helper functions
 function readJSON(file) {
   return JSON.parse(fs.readFileSync(file, 'utf-8'));
-}
-function writeJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 // Auth middleware
