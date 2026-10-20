@@ -169,7 +169,7 @@ describe('Favorites API', () => {
       expect(fs.readFileSync(usersFile, 'utf-8')).toBe(before);
     });
 
-    it.each(['readFileSync', 'renameSync'])('logs %s errors and preserves all favorites', async (operation) => {
+    it.each(['readFileSync', 'writeFileSync', 'renameSync'])('logs %s errors and preserves all favorites', async (operation) => {
       const before = fs.readFileSync(usersFile, 'utf-8');
       const failure = new Error('Storage unavailable');
       const log = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -184,6 +184,18 @@ describe('Favorites API', () => {
       storage.mockRestore();
       expect(fs.readFileSync(usersFile, 'utf-8')).toBe(before);
       expect(fs.readdirSync(path.dirname(usersFile)).filter(name => name.endsWith('.tmp'))).toEqual([]);
+    });
+
+    it('rate-limits repeated requests without changing favorites', async () => {
+      const before = fs.readFileSync(usersFile, 'utf-8');
+      const responses = await Promise.all(Array.from({ length: 61 }, () =>
+        request(app).delete('/api/favorites')
+      ));
+      const limited = responses.find(res => res.statusCode === 429);
+      expect(limited).toBeDefined();
+      expect(limited.body.message).toBe('Too many clear requests. Please try again later.');
+      expect(limited.headers['retry-after']).toBeDefined();
+      expect(fs.readFileSync(usersFile, 'utf-8')).toBe(before);
     });
   });
 });
