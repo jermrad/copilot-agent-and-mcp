@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchFavorites } from '../store/favoritesSlice';
+import { fetchFavorites, clearAllFavorites } from '../store/favoritesSlice';
 import { useNavigate } from 'react-router-dom';
 
 const Favorites = () => {
   const dispatch = useAppDispatch();
   const favorites = useAppSelector(state => state.favorites.items);
   const status = useAppSelector(state => state.favorites.status);
+  const clearStatus = useAppSelector(state => state.favorites.clearStatus);
+  const clearError = useAppSelector(state => state.favorites.clearError);
   const token = useAppSelector(state => state.user.token);
   const navigate = useNavigate();
 
@@ -18,12 +20,26 @@ const Favorites = () => {
     dispatch(fetchFavorites(token));
   }, [dispatch, token, navigate]);
 
+  const handleClearAll = () => {
+    if (window.confirm('Clear all favorite books? This cannot be undone.')) {
+      dispatch(clearAllFavorites(token));
+    }
+  };
+
   if (status === 'loading') return <div>Loading...</div>;
   if (status === 'failed') return <div>Failed to load favorites.</div>;
 
   return (
     <div>
       <h2>My Favorite Books</h2>
+      <button
+        type="button"
+        onClick={handleClearAll}
+        disabled={favorites.length === 0 || clearStatus === 'loading'}
+      >
+        {clearStatus === 'loading' ? 'Clearing...' : 'Clear All'}
+      </button>
+      {clearError && <p role="alert">{clearError}</p>}
       {favorites.length === 0 ? (
         <div style={{
           background: '#fff',
